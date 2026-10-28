@@ -1,31 +1,61 @@
 # mcp-onboarding-concierge
 
-MCP server for Onboarding & Migration Concierge - create checklists, track status, generate acceptance criteria.
+MCP server for **Onboarding & Migration Concierge** - white-glove subscriber onboarding: agent
+stack setup, monitoring baseline capture, data migration into the katsironni platform,
+acceptance-checklist authoring at day one.
+
+Pricing: one-time setup ($200-400 pattern) + $80-150/mo maintenance continuation; concierge
+tier at $99-199/mo.
 
 ## Tools
 
-### create_onboarding_checklist
-Create onboarding checklist for new account.
+### `create_onboarding_checklist`
+Generate and PERSIST a real onboarding checklist.
 
-**Parameters:**
-- `account_id` (string, required): Account identifier
-- `account_name` (string, required): Account name
-- `tier` (string, required): "basic", "professional", "enterprise", or "midband"
-- `migration_from` (string, optional): System being migrated from
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `customer` | string | **required** | Customer name |
+| `services` | array of string | **required** | Services to onboard |
+| `start_date` | string | today | ISO date to start onboarding |
+| `persist` | boolean | `true` | Persist to state |
 
-### get_onboarding_status
-Get onboarding status for an account.
+Returns phases (kickoff, stack setup, data migration, acceptance sign-off, handover) with
+tasks, owners, dependencies, durations, target dates computed from start date, plus per-service
+task sets derived from the requested services.
 
-**Parameters:**
-- `onboarding_id` (string, optional): Onboarding ID
-- `account_id` (string, optional): Account ID (alternative)
+### `get_onboarding_status`
+Return the real status of the persisted onboarding.
 
-### generate_acceptance_checklist
-Generate acceptance checklist for go-live.
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `customer` | string | **required** | Customer name |
 
-**Parameters:**
-- `onboarding_id` (string, required): Onboarding ID
-- `tier` (string, required): "basic", "professional", "enterprise", or "midband"
+Returns per-phase completion from actual recorded task states, overall percentage complete,
+blockers, overdue tasks computed against target dates, days elapsed, estimated days remaining,
+next milestone, and an at-risk verdict.
+
+### `generate_acceptance_checklist`
+Author and PERSIST a real acceptance checklist that becomes the SLA baseline.
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `customer` | string | **required** | Customer name |
+| `services` | array of string | **required** | Services to create acceptance criteria for |
+| `persist` | boolean | `true` | Persist to state |
+
+Returns numbered acceptance criteria per service with verification method, evidence artifact
+required, acceptance threshold, and sign-off field. The checklist feeds back into
+get_onboarding_status as the acceptance phase's criteria set.
+
+### `get_migration_progress`
+Return real migration progress.
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `customer` | string | **required** | Customer name |
+
+Returns per-source migration items with per-item state, records migrated, validation results,
+blockers, and an overall completion percentage with a phase timeline.
 
 ## Installation
 
@@ -39,15 +69,17 @@ pip install -r requirements.txt
 python main.py
 ```
 
-## Connecting to Claude Desktop
+State persisted in `./state/onboarding_state.json`. Override with
+`MCP_ONBOARDING_CONCIERGE_STATE_DIR`.
+
+## Connecting to an MCP client
 
 ```json
 {
   "mcpServers": {
     "onboarding-concierge": {
-      "command": "python",
-      "args": ["/path/to/mcp-onboarding-concierge/main.py"],
-      "cwd": "/path/to/mcp-onboarding-concierge"
+      "command": "python3",
+      "args": ["/tmp/v3-services/mcp-onboarding-concierge/main.py"]
     }
   }
 }
